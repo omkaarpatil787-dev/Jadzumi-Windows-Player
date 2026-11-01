@@ -26,15 +26,18 @@
 #include "playback/Player.h"
 #include "rendering/VideoWindow.h"
 #include "settings/Preferences.h"
+#include "platform/windows/CrashDiagnostics.h"
 
 static QMutex logMutex;
 static QStringList qmlIssues;
 static void localLog(QtMsgType type,const QMessageLogContext&,const QString &message) {
     const QMutexLocker lock(&logMutex);
     if(message.contains("ReferenceError") || message.contains("TypeError") || message.contains("Cannot assign") || message.contains("is not defined")) qmlIssues.append(message);
-    const auto directory=QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation)+"/logs";
-    QDir().mkpath(directory);
-    const auto path=directory+"/player.log";
+    QString path=qEnvironmentVariable("JADZUMI_LOG_FILE");
+    if(path.isEmpty()){
+        const auto directory=QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation)+"/logs";
+        QDir().mkpath(directory);path=directory+"/player.log";
+    }
     if(QFileInfo(path).size()>1024*1024){QFile::remove(path+".1");QFile::rename(path,path+".1");}
     QFile f(path);
     if(f.open(QIODevice::WriteOnly|QIODevice::Append))f.write((QDateTime::currentDateTimeUtc().toString(Qt::ISODate)+" ["+QString::number(type)+"] "+message+'\n').toUtf8());
@@ -49,10 +52,14 @@ public:
     }
 };
 int main(int argc,char **argv) {
+    installCrashDiagnosticsFromEnvironment();
+    if(qEnvironmentVariableIsSet("JADZUMI_LOG_FILE"))qInstallMessageHandler(localLog);
+    qInfo("Bootstrap: before GUI application");
     SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_APPLICATION_DIR|LOAD_LIBRARY_SEARCH_SYSTEM32);
     QQuickWindow::setGraphicsApi(QSGRendererInterface::Direct3D11);
     QQuickWindow::setDefaultAlphaBuffer(true);
     QGuiApplication app(argc,argv);
+    qInfo("Bootstrap: GUI application created");
     app.setOrganizationName("Jadzumi");app.setApplicationName("Jadzumi Player Windows");app.setApplicationVersion("0.3.0-m2");
     app.setWindowIcon(QIcon(":/qt/qml/Jadzumi/assets/jadzumi.ico"));
     qInstallMessageHandler(localLog);
@@ -64,16 +71,20 @@ int main(int argc,char **argv) {
     QQuickStyle::setStyle("Basic");
     QSettings settings;
     Preferences preferences;
+    qInfo("Bootstrap: preferences created");
     SystemSettingsFilter systemFilter;systemFilter.preferences=&preferences;app.installNativeEventFilter(&systemFilter);
     VideoWindow video;
     Player player;
+    qInfo("Bootstrap: playback controller created");
     auto applyPreferences=[&]{player.setResumeEnabled(preferences.resumeEnabled());player.setAutoplay(preferences.autoplay());};
     applyPreferences();QObject::connect(&preferences,&Preferences::changed,&player,applyPreferences);
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty("Player",&player);
     engine.rootContext()->setContextProperty("Preferences",&preferences);
     engine.rootContext()->setContextProperty("VideoSurface",&video);
+    qInfo("Bootstrap: loading QML");
     engine.load(QUrl("qrc:/qt/qml/Jadzumi/qml/Main.qml"));
+    qInfo("Bootstrap: QML load returned");
     if(engine.rootObjects().isEmpty())return 1;
     auto *window=qobject_cast<QQuickWindow*>(engine.rootObjects().first());if(!window)return 1;
     window->resize(qBound(780,settings.value("window/width",1200).toInt(),7680),qBound(520,settings.value("window/height",800).toInt(),4320));
@@ -81,6 +92,7 @@ int main(int argc,char **argv) {
     if(settings.contains("window/position"))for(const auto *screen:QGuiApplication::screens())if(screen->availableGeometry().contains(lastPosition+QPoint(100,100))){window->setPosition(lastPosition);break;}
     auto titleTheme=[window]{BOOL dark=window->color().lightnessF()<0.5;DwmSetWindowAttribute(reinterpret_cast<HWND>(window->winId()),20,&dark,sizeof(dark));};
     titleTheme();QObject::connect(window,&QQuickWindow::colorChanged,window,titleTheme);
+    qInfo("Bootstrap: native window configured");
     QObject::connect(&video,&VideoWindow::toggleFullscreenRequested,window,[window]{QMetaObject::invokeMethod(window,"toggleFullscreen");});
     QObject::connect(&player,&Player::errorChanged,&app,[&]{if(!player.error().isEmpty())qWarning().noquote()<<player.error();});
     const bool smoke=parser.isSet("smoke-test");

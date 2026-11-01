@@ -29,10 +29,16 @@ $env:JADZUMI_TEST_MEDIA = "$root/build/windows/fixture.avi"
 ctest --test-dir build/windows -C Release --output-on-failure
 if ($LASTEXITCODE -ne 0) { throw 'Windows playback integration tests failed.' }
 New-Item -ItemType Directory dist/test-evidence -Force | Out-Null
+$env:JADZUMI_LOG_FILE = "$root/dist/test-evidence/player.log"
+$env:JADZUMI_CRASH_DIR = "$root/dist/test-evidence"
 $smoke = Start-Process "$bin/jadzumi.exe" -ArgumentList @('--smoke-test', "$root/build/windows/fixture.avi", '--smoke-dir', "$root/dist/test-evidence") -PassThru -Wait
 $log = Join-Path $env:LOCALAPPDATA 'Jadzumi/Jadzumi Player Windows/logs/player.log'
 if (Test-Path $log) { Copy-Item $log dist/test-evidence/player.log }
-if ($smoke.ExitCode -ne 0) { throw "Windows UI/playback smoke test failed with exit code $($smoke.ExitCode)." }
+if ($smoke.ExitCode -ne 0) {
+    if (Test-Path dist/test-evidence/player.log) { Get-Content dist/test-evidence/player.log }
+    if (Test-Path dist/test-evidence/startup-stack.txt) { Get-Content dist/test-evidence/startup-stack.txt }
+    throw "Windows UI/playback smoke test failed with exit code $($smoke.ExitCode)."
+}
 New-Item -ItemType Directory dist/Jadzumi-Player -Force | Out-Null
 Copy-Item "$bin/*" dist/Jadzumi-Player -Recurse -Force
 Remove-Item dist/Jadzumi-Player/playback_tests.exe -ErrorAction SilentlyContinue

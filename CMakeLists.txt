@@ -33,9 +33,14 @@ if(JADZUMI_BUILD_APP)
     find_package(Qt6 6.8.3 EXACT REQUIRED COMPONENTS Gui Qml Quick QuickControls2)
     enable_language(RC)
     qt_add_executable(jadzumi WIN32 src/app/main.cpp src/rendering/VideoWindow.cpp
-        src/rendering/VideoWindow.h src/platform/windows/app.rc)
+        src/rendering/VideoWindow.h src/platform/windows/app.rc
+        src/platform/windows/CrashDiagnostics.cpp src/platform/windows/CrashDiagnostics.h)
     target_link_libraries(jadzumi PRIVATE jadzumi_playback Qt6::Gui Qt6::Qml
-        Qt6::Quick Qt6::QuickControls2 user32 dwmapi)
+        Qt6::Quick Qt6::QuickControls2 user32 dwmapi dbghelp)
+    if(MSVC)
+        target_compile_options(jadzumi PRIVATE /Zi)
+        target_link_options(jadzumi PRIVATE /DEBUG:FULL)
+    endif()
     target_include_directories(jadzumi PRIVATE assets)
     target_compile_definitions(jadzumi PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN _WIN32_WINNT=0x0A00 WINVER=0x0A00)
     set_source_files_properties(qml/Theme.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
