@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "baseline_status": "Windows runtime artifact lock pending; not a fully reproducible distribution",
+  "qt": {"version": "6.8.3", "windows_kit": "msvc2022_64", "linkage": "dynamic"},
+  "cmake": {"version": "3.31.6"},
+  "ninja": {"version": "1.11.1"},
+  "mpv": {
+    "source": "https://github.com/mpv-player/mpv",
+    "ref": "v0.40.0",
+    "client_header_sha256": "3c073236a09cb456c6e80587d5523c8771c32fb22ca014e0f99cc3d43905b75c",
+    "required_client_api_major": 2,
+    "windows_dll_sha256": null
+  },
+  "ffmpeg": {"source": "https://git.ffmpeg.org/ffmpeg.git", "ref": "n7.1.1", "windows_build_config": null},
+  "libass": {"version": null, "status": "Record actual version and all transitive libraries from audited Windows runtime"}
+}

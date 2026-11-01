@@ -1,0 +1,14 @@
+/build*/
+/out/
+/dist/
+/runtime/
+/CMakeUserPresets.json
+*.user
+*.log
+*.mp4
+*.mkv
+*.dll
+*.pdb
+*.zip
+*.bundle
+__pycache__/
