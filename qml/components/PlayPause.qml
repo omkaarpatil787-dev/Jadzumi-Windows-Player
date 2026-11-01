@@ -18,7 +18,7 @@ AbstractButton {
             Shape {
                 anchors.fill: parent
                 ShapePath {
-                    fillColor: Theme.onAccent; strokeColor: "transparent"
+                    fillColor: Theme.accentInk; strokeColor: "transparent"
                     PathMove { x: 7 - control.morph; y: 4 }
                     PathLine { x: 12 - 2 * control.morph; y: 7.6 - 3.6 * control.morph }
                     PathLine { x: 12 - 2 * control.morph; y: 16.4 + 3.6 * control.morph }
@@ -26,7 +26,7 @@ AbstractButton {
                     PathLine { x: 7 - control.morph; y: 4 }
                 }
                 ShapePath {
-                    fillColor: Theme.onAccent; strokeColor: "transparent"
+                    fillColor: Theme.accentInk; strokeColor: "transparent"
                     PathMove { x: 12 + 2 * control.morph; y: 7.6 - 3.6 * control.morph }
                     PathLine { x: 19 - control.morph; y: 12 - 8 * control.morph }
                     PathLine { x: 19 - control.morph; y: 12 + 8 * control.morph }

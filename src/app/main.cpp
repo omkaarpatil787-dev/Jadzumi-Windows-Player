@@ -26,6 +26,7 @@
 #include "playback/Player.h"
 #include "rendering/VideoWindow.h"
 #include "settings/Preferences.h"
+#include "settings/ThemeController.h"
 #include "platform/windows/CrashDiagnostics.h"
 
 static QMutex logMutex;
@@ -71,6 +72,7 @@ int main(int argc,char **argv) {
     QQuickStyle::setStyle("Basic");
     QSettings settings;
     Preferences preferences;
+    ThemeController theme(preferences);
     qInfo("Bootstrap: preferences created");
     SystemSettingsFilter systemFilter;systemFilter.preferences=&preferences;app.installNativeEventFilter(&systemFilter);
     VideoWindow video;
@@ -81,16 +83,19 @@ int main(int argc,char **argv) {
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty("Player",&player);
     engine.rootContext()->setContextProperty("Preferences",&preferences);
+    engine.rootContext()->setContextProperty("ThemeState",&theme);
     engine.rootContext()->setContextProperty("VideoSurface",&video);
     qInfo("Bootstrap: loading QML");
     engine.load(QUrl("qrc:/qt/qml/Jadzumi/qml/Main.qml"));
     qInfo("Bootstrap: QML load returned");
     if(engine.rootObjects().isEmpty())return 1;
     auto *window=qobject_cast<QQuickWindow*>(engine.rootObjects().first());if(!window)return 1;
-    window->resize(qBound(780,settings.value("window/width",1200).toInt(),7680),qBound(520,settings.value("window/height",800).toInt(),4320));
+    const auto available=window->screen()?window->screen()->availableGeometry().size():QSize(1920,1080);
+    window->resize(qBound(740,settings.value("window/width",1200).toInt(),qMax(740,available.width()-48)),
+                   qBound(440,settings.value("window/height",800).toInt(),qMax(440,available.height()-64)));
     const QPoint lastPosition=settings.value("window/position").toPoint();
     if(settings.contains("window/position"))for(const auto *screen:QGuiApplication::screens())if(screen->availableGeometry().contains(lastPosition+QPoint(100,100))){window->setPosition(lastPosition);break;}
-    auto titleTheme=[window]{BOOL dark=window->color().lightnessF()<0.5;DwmSetWindowAttribute(reinterpret_cast<HWND>(window->winId()),20,&dark,sizeof(dark));};
+    auto titleTheme=[window,lastDark=-1]() mutable {BOOL dark=window->color().lightnessF()<0.5;if(lastDark==int(dark))return;lastDark=dark;DwmSetWindowAttribute(reinterpret_cast<HWND>(window->winId()),20,&dark,sizeof(dark));};
     titleTheme();QObject::connect(window,&QQuickWindow::colorChanged,window,titleTheme);
     qInfo("Bootstrap: native window configured");
     QObject::connect(&video,&VideoWindow::toggleFullscreenRequested,window,[window]{QMetaObject::invokeMethod(window,"toggleFullscreen");});

@@ -18,7 +18,7 @@ ScrollView {
         }
         Card {
             Layout.fillWidth: true; implicitHeight: Math.max(250, heroColumn.implicitHeight + 64)
-            clip: true; color: Theme.dark ? "#192d46" : "#deebfd"
+            clip: true; color: Theme.hero
             Rectangle { width: 310; height: 310; radius: 155; x: parent.width - 190; y: -130; color: Theme.accent; opacity: 0.09 }
             Rectangle { width: 220; height: 220; radius: 110; x: parent.width - 270; y: 120; color: Theme.accent; opacity: 0.05 }
             ColumnLayout {

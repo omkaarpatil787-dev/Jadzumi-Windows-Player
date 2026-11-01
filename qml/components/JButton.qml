@@ -8,7 +8,7 @@ Button {
     property string tone: "tonal"
     property string hint: ""
     property bool compact: false
-    property color foreground: tone === "primary" ? Theme.onAccent : Theme.text
+    property color foreground: tone === "primary" ? Theme.accentInk : Theme.text
     implicitHeight: 44 * Theme.scaleFactor
     implicitWidth: Math.max(compact ? implicitHeight : 72, contents.implicitWidth + (compact ? 20 : 30))
     font.family: Theme.fontFamily; font.pixelSize: 14 * Theme.scaleFactor

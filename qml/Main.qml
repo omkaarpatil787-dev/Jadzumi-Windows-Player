@@ -8,13 +8,13 @@ import Jadzumi
 ApplicationWindow {
     id: root
     visible: true; width: 1200; height: 800
-    minimumWidth: 780; minimumHeight: 520
+    minimumWidth: 740; minimumHeight: 440
     title: (Player.title.length ? Player.title + " — " : "") + "Jadzumi Player"
     color: Theme.canvas
     font.family: Theme.fontFamily; font.pixelSize: 14 * Theme.scaleFactor
     palette.window: Theme.canvas; palette.windowText: Theme.text; palette.text: Theme.text
     palette.base: Theme.surface; palette.button: Theme.raised; palette.buttonText: Theme.text
-    palette.highlight: Theme.accent; palette.highlightedText: Theme.onAccent
+    palette.highlight: Theme.accent; palette.highlightedText: Theme.accentInk
     property string page: "home"
     property bool appendFiles: false
     property string notice: ""
@@ -69,7 +69,7 @@ ApplicationWindow {
     Shortcut { sequence: "Esc"; context: Qt.ApplicationShortcut; enabled: root.shortcutsAllowed; onActivated: { if (root.visibility === Window.FullScreen) root.showNormal(); else hud.showControls() } }
     Shortcut { sequence: "Media Play"; context: Qt.ApplicationShortcut; enabled: root.shortcutsAllowed; onActivated: Player.setPaused(false) }
     Shortcut { sequence: "Media Pause"; context: Qt.ApplicationShortcut; enabled: root.shortcutsAllowed; onActivated: Player.setPaused(true) }
-    DropArea { anchors.fill: parent; onDropped: drop => { if (drop.hasUrls) { Player.openFiles(drop.urls, false); drop.accepted = true } } }
+    DropArea { anchors.fill: parent; onDropped: drop => { if (drop.hasUrls && Player.openFiles(drop.urls, false)) drop.acceptProposedAction() } }
     RowLayout {
         anchors.fill: parent; anchors.margins: root.page === "player" ? 0 : 20; spacing: 24
         Card {
@@ -82,7 +82,7 @@ ApplicationWindow {
                 anchors.fill: parent; anchors.margins: 14; spacing: 12
                 RowLayout {
                     Layout.fillWidth: true
-                    Rectangle { implicitWidth: 42; implicitHeight: 42; radius: 15; color: Theme.accent; Icon { name: "play"; tint: Theme.onAccent; anchors.centerIn: parent; width: 24; height: 24 } }
+                    Rectangle { implicitWidth: 42; implicitHeight: 42; radius: 15; color: Theme.accent; Icon { name: "play"; tint: Theme.accentInk; anchors.centerIn: parent; width: 24; height: 24 } }
                     Label { textFormat: Text.PlainText; visible: navigation.navigationWidth > 100; text: "JADZUMI"; font.bold: true; font.pixelSize: 16; font.letterSpacing: 1.3 }
                 }
                 Item { implicitHeight: 18 }
@@ -122,7 +122,7 @@ ApplicationWindow {
                         font.family: Theme.fontFamily; font.pixelSize: 14 * Theme.scaleFactor
                         palette.window: Theme.surface; palette.windowText: Theme.text; palette.text: Theme.text
                         palette.button: Theme.raised; palette.buttonText: Theme.text; palette.base: Theme.surface
-                        palette.highlight: Theme.accent; palette.highlightedText: Theme.onAccent
+                        palette.highlight: Theme.accent; palette.highlightedText: Theme.accentInk
                         PlayerHud { id: hud; anchors.fill: parent; onBackRequested: root.showHome(); onFullscreenRequested: root.toggleFullscreen(); onOpenRequested: append => root.chooseFiles(append) }
                     }
                 }

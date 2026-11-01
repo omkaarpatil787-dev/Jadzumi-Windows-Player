@@ -12,7 +12,7 @@ Popup {
     background: Card {}
     palette.windowText: Theme.text; palette.text: Theme.text; palette.buttonText: Theme.text
     palette.button: Theme.raised; palette.base: Theme.surface; palette.highlight: Theme.accent
-    palette.highlightedText: Theme.onAccent
+    palette.highlightedText: Theme.accentInk
     enter: Transition { ParallelAnimation { NumberAnimation { property: "opacity"; from: 0; to: 1; duration: Theme.motion } NumberAnimation { property: "scale"; from: 0.96; to: 1; duration: Theme.motion; easing.type: Easing.OutCubic } } }
     function tracks(type, includeOff) {
         let result = includeOff ? [{label: "Off", id: -1, selected: false}] : []

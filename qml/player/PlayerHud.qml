@@ -27,7 +27,7 @@ Item {
         onDoubleClicked: hud.fullscreenRequested()
         onWheel: wheel => { Player.setVolume(Player.volume + (wheel.angleDelta.y > 0 ? 5 : -5)); hud.showControls(); wheel.accepted = true }
     }
-    DropArea { anchors.fill: parent; onDropped: drop => { if (drop.hasUrls) { Player.openFiles(drop.urls, false); drop.accepted = true } } }
+    DropArea { anchors.fill: parent; onDropped: drop => { if (drop.hasUrls && Player.openFiles(drop.urls, false)) drop.acceptProposedAction() } }
     Card {
         id: topBar
         anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; anchors.margins: 22

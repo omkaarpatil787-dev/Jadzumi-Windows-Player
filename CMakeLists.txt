@@ -8,13 +8,21 @@ if(MSVC)
     add_compile_options(/utf-8)
 endif()
 option(JADZUMI_BUILD_APP "Build the Windows desktop application" ${WIN32})
+option(JADZUMI_BUILD_UI_TEST_HOST "Build a non-production UI test harness" OFF)
+set(JADZUMI_QML_FILES qml/Main.qml qml/Theme.qml
+    qml/components/Icon.qml qml/components/JButton.qml qml/components/Card.qml
+    qml/components/JCombo.qml qml/components/PlayPause.qml qml/components/SettingsPanel.qml
+    qml/components/PlaybackPanel.qml qml/components/FileDetails.qml
+    qml/screens/HomeView.qml qml/screens/QueueView.qml qml/player/PlayerHud.qml)
+set_source_files_properties(qml/Theme.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 include(CTest)
 find_package(Qt6 6.4 REQUIRED COMPONENTS Core Gui Sql)
 add_library(jadzumi_playback STATIC
     src/playback/MpvApi.cpp src/playback/MpvApi.h
     src/playback/Player.cpp src/playback/Player.h
     src/library/HistoryStore.cpp src/library/HistoryStore.h
-    src/settings/Preferences.cpp src/settings/Preferences.h)
+    src/settings/Preferences.cpp src/settings/Preferences.h
+    src/settings/ThemeController.cpp src/settings/ThemeController.h)
 target_include_directories(jadzumi_playback PUBLIC src PRIVATE third_party/mpv/include)
 target_link_libraries(jadzumi_playback PUBLIC Qt6::Core Qt6::Gui Qt6::Sql)
 if(WIN32)
@@ -43,16 +51,19 @@ if(JADZUMI_BUILD_APP)
     endif()
     target_include_directories(jadzumi PRIVATE assets)
     target_compile_definitions(jadzumi PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN _WIN32_WINNT=0x0A00 WINVER=0x0A00)
-    set_source_files_properties(qml/Theme.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
     qt_policy(SET QTP0004 NEW)
     qt_add_qml_module(jadzumi URI Jadzumi VERSION 1.0 RESOURCE_PREFIX /qt/qml
-        QML_FILES qml/Main.qml qml/Theme.qml
-        qml/components/Icon.qml qml/components/JButton.qml qml/components/Card.qml
-        qml/components/JCombo.qml qml/components/PlayPause.qml qml/components/SettingsPanel.qml
-        qml/components/PlaybackPanel.qml qml/components/FileDetails.qml
-        qml/screens/HomeView.qml qml/screens/QueueView.qml qml/player/PlayerHud.qml
+        QML_FILES ${JADZUMI_QML_FILES}
         RESOURCES assets/jadzumi.ico assets/jadzumi.svg)
     install(TARGETS jadzumi RUNTIME DESTINATION .)
+endif()
+if(JADZUMI_BUILD_UI_TEST_HOST)
+    find_package(Qt6 6.8.3 EXACT REQUIRED COMPONENTS Qml Quick QuickControls2)
+    qt_policy(SET QTP0004 NEW)
+    qt_add_executable(ui_smoke_host tests/UiSmokeHost.cpp)
+    target_link_libraries(ui_smoke_host PRIVATE jadzumi_playback Qt6::Qml Qt6::Quick Qt6::QuickControls2)
+    qt_add_qml_module(ui_smoke_host URI Jadzumi VERSION 1.0 OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/UiHarness/Jadzumi RESOURCE_PREFIX /qt/qml
+        QML_FILES ${JADZUMI_QML_FILES} RESOURCES assets/jadzumi.ico assets/jadzumi.svg)
 endif()
 if(BUILD_TESTING)
     find_package(Qt6 6.4 REQUIRED COMPONENTS Test)

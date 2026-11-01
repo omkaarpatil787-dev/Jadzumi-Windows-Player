@@ -7,7 +7,7 @@ ComboBox {
     implicitWidth: 160
     font.family: Theme.fontFamily; font.pixelSize: 14 * Theme.scaleFactor
     palette.text: Theme.text; palette.buttonText: Theme.text; palette.highlight: Theme.accent
-    palette.highlightedText: Theme.onAccent; palette.window: Theme.surface
+    palette.highlightedText: Theme.accentInk; palette.window: Theme.surface
     leftPadding: 14; rightPadding: 34
     contentItem: Text { textFormat: Text.PlainText; text: control.displayText; font: control.font; color: control.enabled ? Theme.text : Theme.muted; verticalAlignment: Text.AlignVCenter; elide: Text.ElideRight }
     background: Rectangle { color: Theme.raised; radius: 13; border.color: control.activeFocus ? Theme.accent : Theme.outline; border.width: 1 }

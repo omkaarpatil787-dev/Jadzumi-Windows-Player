@@ -271,7 +271,7 @@ void Player::applyResume(){
     if(!m_loaded || m_resumeApplied || !m_history.ready() || m_activePath.isEmpty() || duration()<=0)return;
     m_resumeApplied=true;
     const QFileInfo f(m_activePath);
-    const bool fromStart=m_fromBeginning.remove(m_activePath)>0;
+    const bool fromStart=m_fromBeginning.remove(m_activePath);
     if(m_resumeEnabled && !fromStart){
         const double p=m_history.resumePosition(m_activePath,f.size(),f.lastModified().toMSecsSinceEpoch());
         if(p>=2 && p<duration()-3){seek(p);emit notification("Resumed from your last position.");}

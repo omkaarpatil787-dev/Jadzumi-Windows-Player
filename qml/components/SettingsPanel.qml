@@ -12,7 +12,7 @@ Popup {
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
     palette.windowText: Theme.text; palette.text: Theme.text; palette.base: Theme.surface
     palette.buttonText: Theme.text; palette.button: Theme.raised; palette.highlight: Theme.accent
-    palette.highlightedText: Theme.onAccent
+    palette.highlightedText: Theme.accentInk
     background: Card {}
     enter: Transition { ParallelAnimation { NumberAnimation { property: "opacity"; from: 0; to: 1; duration: Theme.motion } NumberAnimation { property: "scale"; from: 0.97; to: 1; duration: Theme.motion; easing.type: Easing.OutCubic } } }
     exit: Transition { NumberAnimation { property: "opacity"; to: 0; duration: Theme.motion / 2 } }
