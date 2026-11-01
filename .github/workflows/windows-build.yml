@@ -1,0 +1,32 @@
+name: Windows x64 build
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Install pinned Qt SDK
+        shell: pwsh
+        run: |
+          python -m pip install aqtinstall==3.3.0
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m aqt install-qt windows desktop 6.8.3 win64_msvc2022_64 -O C:/Qt --archives qtbase qtdeclarative qtsvg qtshadertools
+          exit $LASTEXITCODE
+      - name: Build, test and stage Windows player
+        shell: pwsh
+        run: ./ci/windows-build.ps1
+      - name: Upload portable player and test evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: Jadzumi-Windows-x64
+          path: |
+            dist/
+            build/windows/Testing/Temporary/LastTest.log
+          if-no-files-found: warn
