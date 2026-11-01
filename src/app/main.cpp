@@ -140,7 +140,12 @@ int main(int argc,char **argv) {
         };
         QTimer::singleShot(1000,&app,[=]{capture("01-home-light");});
         QTimer::singleShot(1400,&app,[&]{player.open(QUrl::fromLocalFile(QFileInfo(parser.value("smoke-test")).absoluteFilePath()),true);});
-        QTimer::singleShot(3200,&app,[=]{capture("02-native-video");QMetaObject::invokeMethod(window,"openSettings");});
+        QTimer::singleShot(3200,&app,[=]{
+            capture("02-native-video");
+            for(auto *w:QGuiApplication::allWindows())qInfo()<<"Native surface"<<w->objectName()<<w->geometry()<<w->isVisible()<<w->parent()<<w->property("color");
+            window->setProperty("diagnosticHideOverlay",true);
+        });
+        QTimer::singleShot(3500,&app,[=]{capture("02b-video-without-hud");window->setProperty("diagnosticHideOverlay",false);QMetaObject::invokeMethod(window,"openSettings");});
         QTimer::singleShot(4100,&app,[=]{capture("03-settings-light");QMetaObject::invokeMethod(window,"closeSettings");});
         QTimer::singleShot(4400,&app,[&]{preferences.setTheme("dark");});
         QTimer::singleShot(5100,&app,[=]{capture("04-player-dark");QMetaObject::invokeMethod(window,"toggleFullscreen");});

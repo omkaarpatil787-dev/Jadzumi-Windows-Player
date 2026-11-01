@@ -17,6 +17,7 @@ ApplicationWindow {
     palette.highlight: Theme.accent; palette.highlightedText: Theme.accentInk
     property string page: "home"
     property bool appendFiles: false
+    property bool diagnosticHideOverlay: false
     property string notice: ""
     readonly property bool shortcutsAllowed: !homeSettings.opened && !details.opened && !videoDialog.visible && !hud.modalOpen
     function localUrl(path) { const p = path.replace(/\\/g, "/"); return p.startsWith("/") ? "file://" + p : "file:///" + p }
@@ -116,12 +117,14 @@ ApplicationWindow {
                 // A separate transparent native child window is required above mpv's HWND.
                 WindowContainer {
                     anchors.fill: parent
+                    visible: !root.diagnosticHideOverlay
                     window: ApplicationWindow {
                         id: videoOverlay
+                        objectName: "nativePlaybackHud"
                         background: null
                         color: "transparent"; flags: Qt.FramelessWindowHint
                         font.family: Theme.fontFamily; font.pixelSize: 14 * Theme.scaleFactor
-                        palette.window: Theme.surface; palette.windowText: Theme.text; palette.text: Theme.text
+                        palette.window: "transparent"; palette.windowText: Theme.text; palette.text: Theme.text
                         palette.button: Theme.raised; palette.buttonText: Theme.text; palette.base: Theme.surface
                         palette.highlight: Theme.accent; palette.highlightedText: Theme.accentInk
                         PlayerHud { id: hud; anchors.fill: parent; onBackRequested: root.showHome(); onFullscreenRequested: root.toggleFullscreen(); onOpenRequested: append => root.chooseFiles(append) }
