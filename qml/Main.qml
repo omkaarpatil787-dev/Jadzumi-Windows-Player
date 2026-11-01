@@ -118,6 +118,7 @@ ApplicationWindow {
                     anchors.fill: parent
                     window: ApplicationWindow {
                         id: videoOverlay
+                        background: null
                         color: "transparent"; flags: Qt.FramelessWindowHint
                         font.family: Theme.fontFamily; font.pixelSize: 14 * Theme.scaleFactor
                         palette.window: Theme.surface; palette.windowText: Theme.text; palette.text: Theme.text

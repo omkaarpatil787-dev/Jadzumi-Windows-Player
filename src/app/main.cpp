@@ -16,6 +16,8 @@
 #include <QUrl>
 #include <QIcon>
 #include <QScreen>
+#include <QImage>
+#include <algorithm>
 #include <QCommandLineParser>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -109,11 +111,32 @@ int main(int argc,char **argv) {
             if(!smoke){QList<QUrl> files;for(const auto &f:parser.positionalArguments())files.append(QUrl::fromLocalFile(QFileInfo(f).absoluteFilePath()));if(!files.isEmpty())player.openFiles(files);}
         }
     });
+    bool visibleVideoVerified=false;
+    bool fullscreenVideoVerified=false;
     if(smoke) {
         QDir().mkpath(smokeDir);preferences.setTheme("light");player.setResumeEnabled(false);
-        auto capture=[window,smokeDir](const QString &name){
+        auto capture=[window,smokeDir,&visibleVideoVerified,&fullscreenVideoVerified](const QString &name){
             // Explicit test-only screen capture includes mpv and the native HUD child windows.
-            if(window->screen())window->screen()->grabWindow(0).save(smokeDir+"/"+name+".png");
+            if(!window->screen())return;
+            const auto shot=window->screen()->grabWindow(0);
+            shot.save(smokeDir+"/"+name+".png");
+            if(name=="02-native-video" || name=="05-fullscreen") {
+                // The generated RGB fixture is colorful in this unobstructed band.
+                // Decoding alone cannot detect a white/black native composition failure.
+                const auto image=shot.toImage();
+                const auto origin=window->mapToGlobal(QPoint(0,0))-window->screen()->geometry().topLeft();
+                const qreal ratio=shot.devicePixelRatio();
+                int colorful=0;
+                for(int x=2;x<=7;++x) {
+                    const QPoint sample=(origin+QPoint(window->width()*x/10,window->height()*3/10))*ratio;
+                    if(!image.rect().contains(sample))continue;
+                    const auto c=image.pixelColor(sample);
+                    if(std::max({c.red(),c.green(),c.blue()})-std::min({c.red(),c.green(),c.blue()})>35 && c.red()>35 && c.red()<160)++colorful;
+                }
+                const bool visible=colorful>=4;
+                if(name=="02-native-video")visibleVideoVerified=visible;
+                else fullscreenVideoVerified=visible;
+            }
         };
         QTimer::singleShot(1000,&app,[=]{capture("01-home-light");});
         QTimer::singleShot(1400,&app,[&]{player.open(QUrl::fromLocalFile(QFileInfo(parser.value("smoke-test")).absoluteFilePath()),true);});
@@ -129,8 +152,8 @@ int main(int argc,char **argv) {
         QTimer::singleShot(9200,&app,[=]{capture("07-settings-system-reduced-motion");QMetaObject::invokeMethod(window,"closeSettings");});
         QTimer::singleShot(10500,&app,[&]{
             QStringList issues;{const QMutexLocker lock(&logMutex);issues=qmlIssues;}
-            const bool ok=player.ready() && player.loaded() && player.position()>0 && player.error().isEmpty() && issues.isEmpty() && player.diagnostics().value("current-vo").toString()=="gpu";
-            QJsonObject report{{"success",ok},{"version",app.applicationVersion()},{"position",player.position()},{"error",player.error()},
+            const bool ok=visibleVideoVerified && fullscreenVideoVerified && player.ready() && player.loaded() && player.position()>0 && player.error().isEmpty() && issues.isEmpty() && player.diagnostics().value("current-vo").toString()=="gpu";
+            QJsonObject report{{"success",ok},{"visibleVideoVerified",visibleVideoVerified},{"fullscreenVideoVerified",fullscreenVideoVerified},{"version",app.applicationVersion()},{"position",player.position()},{"error",player.error()},
                 {"qmlIssues",QJsonArray::fromStringList(issues)},{"diagnostics",QJsonObject::fromVariantMap(player.diagnostics())},
                 {"limits","Virtual Windows runner: physical laptop decoding, audible sync and HDR output require separate verification."}};
             QFile f(smokeDir+"/smoke-report.json");if(f.open(QIODevice::WriteOnly))f.write(QJsonDocument(report).toJson());
