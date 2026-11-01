@@ -1,68 +1,51 @@
-# Windows build instructions
+# Windows build and package
 
-## Baseline
+## Tested toolchain
 
-- Windows 11 x64, Visual Studio 2022 C++ Desktop workload, Windows 11 SDK, x64 developer shell.
-- Qt **6.8.3**, `msvc2022_64`, including Qt Quick, Controls, QML and Qt Test. Dynamic Qt libraries.
-- CMake **3.31.6**, Ninja **1.11.1** (the Linux validation tool package was 1.11.1.3).
-- Windows x64 libmpv build based on **mpv 0.40.0**, with FFmpeg **7.1.1**, libass and D3D11 output enabled. The shipped binary, codec configuration and exact dependency versions must be recorded and reviewed. These Windows binary artifacts were unavailable in this workspace.
-- Optional FFmpeg command-line tool for generating the integration fixture. It is a build/test tool, not a second application playback engine.
+- Windows x64 with Visual Studio 2022 C++ Desktop workload and Windows SDK.
+- Qt **6.8.3**, `msvc2022_64`, dynamically linked: Core/Gui/QML/Quick/Controls/Shapes/SQL.
+- CMake **3.31.6**; the CI generator is Visual Studio 17 2022.
+- Exact upstream **LGPL** libmpv development archive, source commit and SHA-256 recorded in `third_party/dependencies.json`. Do not substitute a moving “latest” binary.
 
-`third_party/dependencies.json` records intended pins. **Windows runtime acquisition is not yet reproducible:** no verified DLL download URL/hash or complete transitive FFmpeg/libass build lock is invented. Obtain a trusted/audited runtime or build the pinned sources and all dependencies in your own reproducible toolchain. Verify its actual mpv/FFmpeg versions in diagnostics. Do not install a random rolling “latest” DLL and call it the pinned build. Review current security fixes before release; the M0 baseline is not a security endorsement of older releases.
+The source keeps the official v0.40.0 public client header and resolves compatible client-API-major-2 functions dynamically. The packaged runtime is the explicitly recorded newer snapshot. FFmpeg/libass are supplied by that upstream runtime, not a separate replacement engine.
 
-Only the C API header is needed to compile. MpvApi resolves required exports at runtime, allowing MSVC Qt to consume a compatible C-ABI libmpv DLL without linking a MinGW import library. DLL dependencies and C runtimes must still be supplied correctly.
+## Reproduce native CI
 
-## Configure and build
-
-Run from the repository in an x64 Visual Studio Developer PowerShell:
+From the source root in PowerShell, with Visual Studio installed:
 
 ```powershell
-$env:CMAKE_PREFIX_PATH = 'C:\Qt\6.8.3\msvc2022_64'
-cmake --preset windows-msvc
-cmake --build --preset windows-msvc
+python -m pip install aqtinstall==3.3.0 cmake==3.31.6
+python -m aqt install-qt windows desktop 6.8.3 win64_msvc2022_64 -O C:/Qt --archives qtbase qtdeclarative qtsvg qtshadertools
+./ci/windows-build.ps1
 ```
 
-Qt is required at exactly 6.8.3 for the Windows application. Use x64 dependencies throughout. If CMake reports missing Qt or the compiler environment, fix setup and rerun; do not bypass dependencies or disable the player.
+The script configures/builds the app and tests, verifies/extracts libmpv, deploys Qt and the MSVC redistributable CRT DLLs, generates real synthetic media, runs the integration suite and then the native UI/playback smoke test. It refuses to package after a failed check. Test evidence is written under `dist/test-evidence`; the portable folder/ZIP are under `dist`.
 
-Place `libmpv-2.dll` and its reviewed dependent DLLs beside `build\windows-msvc\jadzumi.exe`. The binary must export client API major 2. Do not copy unrelated DLLs or mpv user scripts/config. The app uses an absolute path for libmpv and restricts dependent DLL search to the application directory and System32.
+For a normal developer build, the existing `windows-msvc` CMake preset uses Ninja from an x64 developer shell. Set `CMAKE_PREFIX_PATH` to the same Qt kit, configure/build, then deploy the pinned runtime and Qt as done in the CI script.
 
-Deploy Qt for local testing:
+## Run the development application
 
-```powershell
-& 'C:\Qt\6.8.3\msvc2022_64\bin\windeployqt.exe' --qmldir .\qml --compiler-runtime .\build\windows-msvc\jadzumi.exe
-.\build\windows-msvc\jadzumi.exe 'C:\Videos\local-test.mp4'
-```
+Extract the complete portable folder and launch `jadzumi.exe`. Keep all DLLs and plugin/QML directories beside it. No SDK or Python is needed on the playback computer. The EXE is unsigned; code signing is a later release task.
 
-If startup fails before a window appears, check the DLL architecture and missing transitive dependencies using an appropriate Windows dependency inspection tool. If QML or mpv initialization fails, inspect the local log or the visible engine error. Preferences use QSettings under `HKEY_CURRENT_USER\Software\Jadzumi\Jadzumi Player Windows`. Logs are under Qt's AppLocalDataLocation, typically `%LOCALAPPDATA%\Jadzumi\Jadzumi Player Windows\logs`, capped at two approximately 1 MiB files.
+Application preferences use QSettings under the Jadzumi organization/application name. History is stored in Qt's AppLocalDataLocation as `playback.sqlite`; local logs are capped at two approximately 1 MiB files. On Windows the data directory is typically `%LOCALAPPDATA%\Jadzumi\Jadzumi Player Windows`. Screenshots go to `Pictures\Jadzumi Player`.
 
-## Test on Windows
+## Tests without the full Windows UI
 
-Generate a 12-second synthetic video plus audio, then point tests at actual absolute paths:
-
-```powershell
-ffmpeg -hide_banner -loglevel error -y -f lavfi -i 'testsrc2=size=640x360:rate=24' -f lavfi -i 'sine=frequency=440:sample_rate=48000' -t 12 -c:v mpeg4 -q:v 4 -c:a aac -shortest .\build\windows-msvc\fixture.mp4
-$env:JADZUMI_TEST_MPV = (Resolve-Path .\build\windows-msvc\libmpv-2.dll).Path
-$env:JADZUMI_TEST_MEDIA = (Resolve-Path .\build\windows-msvc\fixture.mp4).Path
-ctest --preset windows-msvc
-```
-
-The integration tests deliberately use `vo=null`, `ao=null`, `hwdec=no`. They verify demux/decode, playback state, controls and lifecycle, **not visible output, hardware decoding or audible A/V sync**. Run the full manual matrix in TESTING.md with the actual Windows application.
-
-## Portable development handoff
-
-`packaging/Stage-M0.ps1` stages the executable, audited mpv DLL folder, runtime hashes, notices and Qt deployment into a development ZIP. This is a staging helper, not release certification. Installer/uninstaller, final icon, signing, associations, full source/license obligations and release security review belong to M6. Never distribute the candidate until the actual binary set has been reviewed.
-
-## Portable backend validation on Linux
-
-Qt Core/Test >=6.4 and a client-API-2 libmpv runtime can test the shared backend:
+Qt Core/Gui/SQL/Test >=6.4 can compile the portable backend; the UI test host requires exactly Qt 6.8.3:
 
 ```sh
 cmake -S . -B build/backend -DJADZUMI_BUILD_APP=OFF -DBUILD_TESTING=ON
 cmake --build build/backend
-sh tests/make-fixture.sh build/backend/fixture.mp4
+python3 tests/make_fixture.py build/backend/fixture.avi
 export JADZUMI_TEST_MPV=/absolute/path/to/libmpv.so.2
-export JADZUMI_TEST_MEDIA="$PWD/build/backend/fixture.mp4"
+export JADZUMI_TEST_MEDIA="$PWD/build/backend/fixture.avi"
 ctest --test-dir build/backend --output-on-failure
 ```
 
-This lower Qt version is solely for backend compatibility testing and cannot build/run the Qt 6.8 WindowContainer application.
+The committed compatibility fixtures are synthetic; their generation is documented in `tests/fixtures/README.md`. Backend tests use null presentation outputs but real demuxing/decoding. They do not prove visible rendering or audible synchronization.
+
+`JADZUMI_BUILD_UI_TEST_HOST=ON` builds `ui_smoke_host` from the same QML and real controller code for local software/offscreen layout checks. It is never distributed as the Windows player or used to claim native D3D11 validation.
+
+## Release limits
+
+See TESTING.md, KNOWN-ISSUES.md and M2-REPORT.md. HDR output stays SDR until M4 verification. Physical target-GPU performance, hybrid adapters, multi-monitor behavior, long playback and audible A/V sync are not established by a hosted Windows runner. Final dependency security, source/license completeness, signing and stable release packaging remain M6 requirements.

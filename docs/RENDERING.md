@@ -46,3 +46,13 @@ The callback is unregistered and mpv workers are terminated while the Player and
 - https://doc.qt.io/qt-6/qsgrendererinterface.html
 
 Do not substitute the moving `master` manual for the headers/options shipped with a chosen binary.
+
+## M2 update
+
+The actual packaged upstream LGPL runtime is pinned to commit `9e2ed65eb0c02f99a352dfa1ad3c85ecceefe005`, not the initial unbuilt 0.40.0 intention. Its archive includes a public D3D11 render header. The client ABI remains compatible with the preserved public client header. Availability of the newer API does not, by itself, validate a Qt RHI shared-texture implementation; that route is not silently substituted.
+
+M2 retains native D3D11 `wid` hosting. A transparent owned native Qt Quick tool window carries the floating HUD above the embedded video. Root QML scene siblings are not used as invisible in-video controls. Final native smoke evidence, including full-window desktop captures, is tracked in M2-REPORT.md.
+
+The theme data singleton contains no deferred QML animations. A GUI-thread ThemeController owns finite palette transitions and reacts to application palette and preference changes. The Linux software UI harness validates the same layouts without claiming Windows video composition or GPU support.
+
+The native Windows composition check rejected the first HUD implementation: alpha in an embedded sibling child window revealed the opaque Qt parent rather than visible video. The fallback uses an owned frameless Qt tool window aligned to the video region, with transparent clear color and palette. It follows owner visibility/geometry and carries input and dialogs. This uses desktop composition rather than video texture readbacks; native captures must show actual fixture pixels beneath the HUD before packaging.

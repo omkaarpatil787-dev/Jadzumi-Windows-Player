@@ -1,14 +1,15 @@
-# Known limitations
+# Known limitations — M2 development build
 
-1. Windows executable not compiled here; no Windows SDK, compiler, display session or target GPU. D3D11 embedding and Qt 6.8.3 application integration require local verification.
-2. Exact audited Windows libmpv/FFmpeg/libass binary artifacts and their transitive dependency hashes are not available. Intended source pins do not constitute a reproducible runtime distribution.
-3. Native WindowContainer stacking prevents normal in-video QML overlays. M0 keeps controls in an external strip. M1/M2 immersive design must resolve this explicitly rather than placing invisible controls over the HWND.
-4. Native child-window mouse/focus/keyboard forwarding, including double-click, requires Windows testing. Fullscreen button and shortcuts are implemented; their runtime behavior is unverified.
-5. Output is intentionally SDR-only for M0. Windows display HDR capability, active HDR state and color correctness are not verified. Dolby Vision is not advertised.
-6. Diagnostics show only observed mpv properties. Missing values are unavailable; CPU/GPU utilization, VRAM, actual GPU adapter and end-to-end output latency are not measured.
-7. Local file opening accepts a conservative video-extension list and rejects explicit URLs/network-share paths/playlists. Network-mapped drives and link traversal have not had a Windows privacy audit. External stream references are disabled. No drag/drop or library scanning in M0.
-8. Only volume and logical window size persist. Remembered position, customization, resume history, themes, subtitles/audio panels, media-session integration and file associations remain later work.
-9. No installer, release signing or final icon. Development ZIP helper is untested on Windows. The application loads native DLLs; source provenance and license/security review are required before distributing a runtime.
-10. `terminate_destroy` can block while mpv joins workers. Long playback, slow storage, hybrid GPU, resource leak and paused-idle profiling remain untested.
-11. Source distribution licensing has not been chosen by Omkar Patil. Third-party rights are separate. Nothing here is a final codec/legal compliance certification.
-12. Automatic renderer replacement is not implemented. Rendering errors remain visible and block acceptance. Software decoder selection is available; it cannot repair a broken GPU output path.
+1. Native Windows compilation and real-media control tests pass. UI smoke-test results and visual composition evidence are recorded in M2-REPORT.md; target-laptop GPU, audible synchronization, multi-monitor and long-session validation are not implied by CI results.
+2. The available upstream LGPL libmpv Windows runtime is a pinned development snapshot. Its exact source commit, archive and DLL hashes are recorded. A stable-runtime/security/transitive-license audit is still required before M6 release.
+3. The video and Qt scene graph use separate native D3D11 windows. A transparent owned tool window carries the HUD; ordinary QML siblings cannot overlap the native video. Direct Qt RHI/libmpv texture integration is not implemented or claimed as zero-copy.
+4. Windows focus, media-key behavior outside the active application, hybrid GPU switching, HDR monitors, device-loss recovery and playback while moving between displays need physical-machine testing.
+5. Output is SDR. The app does not claim verified HDR passthrough or universal Dolby Vision. Ten-bit HEVC decoding is tested separately from HDR color correctness.
+6. Diagnostics show observed stream/decoder values. CPU/GPU utilization, VRAM and actual GPU adapter identity are not measured. Missing telemetry is not fabricated.
+7. Core paths are local videos. Explicit network URLs/UNC paths and playlist files are rejected. Network-mapped drives and link traversal still require a Windows privacy audit. No automatic media deletion exists.
+8. SQLite resume/history is not a scanned media library. Poster caching, folder indexing, search/sorting across a collection and optional online metadata belong to M3 or later. Failed/missing files produce visible errors.
+9. The build is unsigned. Installer/release signing and full release qualification are M6 tasks. Development packaging is supplied to make the M2 app runnable, not to certify a release candidate.
+10. Shutdown synchronously joins mpv and flushes SQLite worker writes. Extended playback, slow-disk failure, paused-idle usage and memory/GPU resource behavior need M5 profiling.
+11. ASS/SSA script positioning can override simple subtitle position/scale controls. Advanced font/color controls, audio-device selection, passthrough and processing are not exposed as fake settings.
+12. Language selection, updater controls, file associations, taskbar integration and background Windows media-session support are not implemented in M2.
+13. App code has no general redistribution license selected. Library source/notice completeness, codec patent review and dependency security auditing remain unresolved release gates; see LICENSES/THIRD-PARTY-SOURCES.md.

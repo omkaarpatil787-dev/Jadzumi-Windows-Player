@@ -1,3 +1,5 @@
+> Historical M0 record. Current native Windows build and M1–M2 evidence are in [M2-REPORT.md](M2-REPORT.md) and [TESTING.md](TESTING.md).
+
 # M0 implementation report — 2026-11-01
 
 **Result: M0 source candidate implemented; Windows acceptance pending. M1 not started.**

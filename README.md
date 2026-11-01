@@ -1,41 +1,39 @@
 # Jadzumi Player — Windows Edition
 
-Native, offline-first Windows 11 x64 video player. C++20, Qt Quick/QML and the official libmpv client API. Created by Omkar Patil with AI-assisted development.
+A native, offline-first Windows x64 video player built with C++20, Qt 6 Quick/QML and the official libmpv client API. Created by Omkar Patil with AI-assisted development.
 
-**Milestone: M0 implementation candidate.** The C++ backend builds and passes real libmpv integration tests on Linux. The Windows executable, native D3D11 rendering, GPU decoding, audible A/V synchronization and fullscreen have **not** been validated on Windows. M0 acceptance is pending; M1 has not started. See [the implementation report](docs/M0-REPORT.md).
+**Current scope: M1–M2 development build (0.3.0-m2).** This is a working playback application, not a mockup. Native Windows compilation and the expanded real-media backend tests have passed. Native visible-video/HUD and fullscreen smoke checks have also passed. Build and package evidence is tracked in [M2-REPORT.md](docs/M2-REPORT.md). Physical laptop GPU, audible synchronization and HDR-output checks remain separate acceptance work.
 
-## Implemented in M0
+## Features through M2
 
-- Dynamic loading of the official libmpv C API from an explicit application-local DLL.
-- Qt Quick bootstrap and real native video-window host, requesting `vo=gpu`, D3D11 and D3D11VA with libmpv's software decoder fallback.
-- Local file opening, command-line opening, play/pause, stop, absolute/relative seeking, volume and mute.
-- Fullscreen action, fixed initial keyboard shortcuts and decoder recovery choice.
-- Event-driven position, duration, stream and decoder diagnostics. No progress polling timer or application video-frame readback.
-- Bounded local logs, visible errors, persisted volume and logical window size.
-- Real integration tests using generated video and audio, with a headless test output that is never used by the Windows app.
+- Light, Dark, AMOLED and System themes; animated color transitions, Windows reduced-motion support and interface scaling.
+- Adaptive sidebar, home/recent playback, file details, queue and persistent settings.
+- Native D3D11 video hosting with a dedicated transparent owned Qt Quick tool window for floating player controls.
+- Play/pause, stop, scrub/relative seek, volume/mute, 0.5×–2× speed and frame stepping.
+- Real audio/subtitle track selection, external subtitle loading, subtitle visibility, size/position and audio/subtitle synchronization.
+- Aspect ratio, Fit/Fill/Zoom, rotation, chapters, A–B repeat, looping and screenshots.
+- Multi-file opening, drag-and-drop, playlist navigation, autoplay preference and SQLite resume/history on a worker thread.
+- Customizable keyboard shortcuts with conflict checks, fullscreen, and persisted normal window size/position.
+- Observed codec/decoder diagnostics, visible errors and bounded local logs.
 
-No motion interpolation or frame-rate conversion. The engine uses original media timing (`video-sync=audio`, `interpolation=no`). Qt's UI rendering remains independent.
+Original media frame rates are preserved (`video-sync=audio`, `interpolation=no`). There is no motion interpolation, optical flow or generated-frame conversion. UI motion is independent of video timing.
 
-## Build and validation
+## Run
 
-Start with [Windows setup](docs/BUILD-WINDOWS.md), [renderer decision](docs/RENDERING.md), [test matrix](docs/TESTING.md) and [known limitations](docs/KNOWN-ISSUES.md).
+Use the portable Windows package from the build artifacts: extract the entire folder and run **`jadzumi.exe`**. Keep its Qt and libmpv DLLs and plugin directories together. Copying just the application EXE to an empty folder will not provide its runtime dependencies.
 
-```powershell
-# x64 Native Tools Command Prompt / Developer PowerShell, Qt 6.8.3 msvc2022_64
-$env:CMAKE_PREFIX_PATH = 'C:\Qt\6.8.3\msvc2022_64'
-cmake --preset windows-msvc
-cmake --build --preset windows-msvc
-# Supply an audited x64 libmpv runtime as described in docs/BUILD-WINDOWS.md.
-```
+Quick start: [M2-QUICKSTART.md](docs/M2-QUICKSTART.md).
 
-Only implemented M0 controls appear in the UI. Library, themes, artwork, immersive overlays, HDR display verification, advanced audio/subtitles, installers and file associations remain in their specified later milestones.
+Source: [omkaarpatil787-dev/Jadzumi-Windows-Player](https://github.com/omkaarpatil787-dev/Jadzumi-Windows-Player), branch `main`. The Android project is unchanged.
 
-## Repository
+## Build and tests
 
-Source: [omkaarpatil787-dev/Jadzumi-Windows-Player](https://github.com/omkaarpatil787-dev/Jadzumi-Windows-Player), branch `main`. This is an independent Windows project; the Android player is unchanged. See [repository setup](docs/REPOSITORY.md) for cloning instructions.
+See [Windows build instructions](docs/BUILD-WINDOWS.md), [rendering decisions](docs/RENDERING.md), [tests](docs/TESTING.md), [known limitations](docs/KNOWN-ISSUES.md) and [milestones](docs/MILESTONES.md).
 
-## Privacy and licensing
+The Windows workflow builds with Qt **6.8.3**, verifies an exact upstream LGPL libmpv archive hash, exercises synthetic real media and stages dependencies. The runtime is an explicitly pinned **development** snapshot, not advertised as a stable release. Its exact commit and binary hashes are in [third_party/dependencies.json](third_party/dependencies.json).
 
-The application contains no HTTP client, accounts, analytics, updater or metadata requests. It accepts local media paths, disables mpv user config, scripts, ytdl and external references, and restricts the FFmpeg lavf protocol list to `file`. Logs and preferences remain on this computer. File deletion is not implemented.
+## Privacy and distribution
 
-The project source is publicly visible, but an open-source distribution license has not been selected. The vendored mpv client header retains its own permissive notice. Qt, libmpv, FFmpeg and all bundled dependencies require their own notices, source/relinking obligations and final license review before binary distribution. See [LICENSES/README.md](LICENSES/README.md). No Windows release binary is supplied.
+No accounts, advertising, analytics, metadata requests or updater. Core playback uses local files. mpv user config/scripts, ytdl and external references are disabled. The lavf protocol list is restricted to `file`; explicit URLs/network-share paths are rejected. Displayed metadata uses plain text. History and preferences remain local; clearing history never deletes videos.
+
+M3 library scanning and M4 advanced HDR/audio processing are not implemented. Output is SDR in this development build. M5 profiling and M6 release security/licensing/signing remain pending. The publicly visible application source has no general open-source license selected yet; third-party libraries retain their own terms. Dependency notices/provenance are included. See [LICENSES](LICENSES/README.md).
