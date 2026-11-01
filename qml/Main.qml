@@ -125,7 +125,7 @@ ApplicationWindow {
                         transientParent: root
                         visible: root.page === "player" && root.visible && root.visibility !== Window.Minimized && !root.diagnosticHideOverlay
                         width: playerStage.width; height: playerStage.height
-                        property point screenOrigin: { root.x; root.y; root.width; root.height; root.screen; return playerStage.mapToGlobal(0, 0) }
+                        property point screenOrigin: { root.x; root.y; root.width; root.height; root.screen; return root.contentItem.mapToGlobal(0, 0) }
                         x: screenOrigin.x; y: screenOrigin.y
                         onClosing: close => { close.accepted = false; root.close() }
                         font.family: Theme.fontFamily; font.pixelSize: 14 * Theme.scaleFactor
