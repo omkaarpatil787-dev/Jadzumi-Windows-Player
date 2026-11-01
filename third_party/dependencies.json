@@ -1,16 +1,36 @@
 {
   "schema": 1,
-  "baseline_status": "Windows runtime artifact lock pending; not a fully reproducible distribution",
-  "qt": {"version": "6.8.3", "windows_kit": "msvc2022_64", "linkage": "dynamic"},
-  "cmake": {"version": "3.31.6"},
-  "ninja": {"version": "1.11.1"},
+  "baseline_status": "M2 development binary candidate; native Windows build and tests run in CI; final release audit remains M6",
+  "qt": {
+    "version": "6.8.3",
+    "windows_kit": "msvc2022_64",
+    "linkage": "dynamic"
+  },
+  "cmake": {
+    "version": "3.31.6"
+  },
+  "ninja": {
+    "version": "1.11.1"
+  },
   "mpv": {
     "source": "https://github.com/mpv-player/mpv",
-    "ref": "v0.40.0",
     "client_header_sha256": "3c073236a09cb456c6e80587d5523c8771c32fb22ca014e0f99cc3d43905b75c",
     "required_client_api_major": 2,
-    "windows_dll_sha256": null
+    "windows_dll_sha256": "2b75030b049017ba366a1adf413f38e3555af188f2060ba4305f3b7ebb514350",
+    "header_ref": "v0.40.0",
+    "runtime_ref": "9e2ed65eb0c02f99a352dfa1ad3c85ecceefe005",
+    "runtime_version": "v0.41.0-1373-g9e2ed65eb (upstream development build)",
+    "runtime_license": "LGPL-3.0-or-later, upstream -Dgpl=false variant",
+    "archive_url": "https://github.com/mpv-player/mpv/releases/download/git-release/libmpv-v0.41.0-dev-g9e2ed65eb-41103006513-x86_64-w64-mingw32-lgpl.zip",
+    "archive_sha256": "15a2dcd9c4649a6ca73e53ad6b07ad6470ba6354e414f6c1ef54b6f21bd621e3"
   },
-  "ffmpeg": {"source": "https://git.ffmpeg.org/ffmpeg.git", "ref": "n7.1.1", "windows_build_config": null},
-  "libass": {"version": null, "status": "Record actual version and all transitive libraries from audited Windows runtime"}
+  "ffmpeg": {
+    "source": "https://git.ffmpeg.org/ffmpeg.git",
+    "runtime": "From the pinned upstream LGPL libmpv build; actual version appears in CI and runtime diagnostics",
+    "windows_build_config": "Upstream LGPL variant; not the previous unbuilt n7.1.1 intention"
+  },
+  "libass": {
+    "source": "https://github.com/libass/libass",
+    "status": "Statically bundled by upstream LGPL libmpv build; final transitive source audit remains M6"
+  }
 }

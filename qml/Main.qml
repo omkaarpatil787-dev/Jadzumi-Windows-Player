@@ -2,119 +2,133 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
+import QtQml.Models
+import Jadzumi
 
 ApplicationWindow {
     id: root
-    visible: true
-    width: 1100; height: 760
-    minimumWidth: 720; minimumHeight: 480
-    title: (Player.title.length ? Player.title + " — " : "") + "Jadzumi Player · M0"
-    color: "#101724"
-    palette.window: "#101724"
-    palette.windowText: "#e8f0ff"
-    palette.text: "#e8f0ff"
-    palette.button: "#253449"
-    palette.buttonText: "#e8f0ff"
-    palette.highlight: "#9bcaff"
-    property bool diagnosticsVisible: false
-    function fullscreen() {
-        if (visibility === Window.FullScreen) showNormal()
-        else showFullScreen()
+    visible: true; width: 1200; height: 800
+    minimumWidth: 780; minimumHeight: 520
+    title: (Player.title.length ? Player.title + " — " : "") + "Jadzumi Player"
+    color: Theme.canvas
+    font.family: Theme.fontFamily; font.pixelSize: 14 * Theme.scaleFactor
+    palette.window: Theme.canvas; palette.windowText: Theme.text; palette.text: Theme.text
+    palette.base: Theme.surface; palette.button: Theme.raised; palette.buttonText: Theme.text
+    palette.highlight: Theme.accent; palette.highlightedText: Theme.onAccent
+    property string page: "home"
+    property bool appendFiles: false
+    property string notice: ""
+    readonly property bool shortcutsAllowed: !homeSettings.opened && !details.opened && !videoDialog.visible && !hud.modalOpen
+    function localUrl(path) { const p = path.replace(/\\/g, "/"); return p.startsWith("/") ? "file://" + p : "file:///" + p }
+    function toggleFullscreen() { if (visibility === Window.FullScreen) showNormal(); else showFullScreen(); hud.showControls() }
+    function openSettings() { if (page === "player") hud.openSettings(); else homeSettings.open() }
+    function closeSettings() { homeSettings.close(); hud.closeSettings() }
+    function showHome() { if (Player.loaded) Player.setPaused(true); page = "home"; if (visibility === Window.FullScreen) showNormal() }
+    function chooseFiles(append) { appendFiles = append; videoDialog.open() }
+    function act(action) {
+        hud.showControls()
+        switch (action) {
+        case "open": chooseFiles(false); break
+        case "playPause": Player.togglePause(); break
+        case "seekBack": Player.seekRelative(-10); break
+        case "seekForward": Player.seekRelative(10); break
+        case "volumeUp": Player.setVolume(Player.volume + 5); break
+        case "volumeDown": Player.setVolume(Player.volume - 5); break
+        case "fullscreen": toggleFullscreen(); break
+        case "mute": Player.toggleMute(); break
+        case "subtitles": Player.toggleSubtitles(); break
+        case "frameStep": Player.frameStep(); break
+        case "next": Player.next(); break
+        case "previous": Player.previous(); break
+        case "stop": Player.stop(); break
+        }
     }
-    function time(seconds) {
-        const value = Math.max(0, Math.floor(seconds || 0))
-        return Math.floor(value / 3600).toString().padStart(2, "0") + ":" +
-               Math.floor(value % 3600 / 60).toString().padStart(2, "0") + ":" +
-               (value % 60).toString().padStart(2, "0")
+    onActiveChanged: if (active) Preferences.refreshSystemMotion()
+    Connections {
+        target: Player
+        function onFileLoaded() { root.page = "player"; hud.showControls() }
+        function onNotification(message) { root.notice = message; noticeTimer.restart() }
     }
+    Timer { id: noticeTimer; interval: 4000; onTriggered: root.notice = "" }
     FileDialog {
-        id: openDialog
-        title: "Open a local video"
+        id: videoDialog; title: root.appendFiles ? "Add local videos to queue" : "Open local videos"
+        fileMode: FileDialog.OpenFiles
         nameFilters: ["Video files (*.mkv *.mp4 *.mov *.avi *.webm *.ts *.mts *.m2ts *.m4v *.flv *.mpg *.mpeg)"]
-        onAccepted: Player.open(selectedFile)
+        onAccepted: Player.openFiles(selectedFiles, root.appendFiles)
     }
-    Shortcut { sequence: "Ctrl+O"; onActivated: openDialog.open() }
-    Shortcut { sequence: "Space"; onActivated: Player.togglePause() }
-    Shortcut { sequence: "Left"; onActivated: Player.seekRelative(-10) }
-    Shortcut { sequence: "Right"; onActivated: Player.seekRelative(10) }
-    Shortcut { sequence: "Up"; onActivated: Player.setVolume(Player.volume + 5) }
-    Shortcut { sequence: "Down"; onActivated: Player.setVolume(Player.volume - 5) }
-    Shortcut { sequence: "M"; onActivated: Player.toggleMute() }
-    Shortcut { sequence: "F"; onActivated: root.fullscreen() }
-    Shortcut { sequence: "F11"; onActivated: root.fullscreen() }
-    Shortcut { sequence: "Escape"; onActivated: { if (root.visibility === Window.FullScreen) root.showNormal() } }
-    ColumnLayout {
-        anchors.fill: parent
-        spacing: 0
-        RowLayout {
-            Layout.fillWidth: true; Layout.margins: 12
-            Label { text: "JADZUMI PLAYER"; font.bold: true; font.pixelSize: 17 }
-            Label { text: "M0 · Playback foundation"; color: "#a5b5cd"; Layout.fillWidth: true }
-            Button { text: "Open video"; enabled: Player.ready; onClicked: openDialog.open() }
-            Button { text: "Diagnostics"; checkable: true; checked: root.diagnosticsVisible; onClicked: root.diagnosticsVisible = checked }
+    Instantiator {
+        model: Object.keys(Preferences.shortcuts)
+        delegate: Shortcut {
+            required property string modelData
+            sequence: Preferences.shortcuts[modelData]; context: Qt.ApplicationShortcut
+            enabled: root.shortcutsAllowed
+            onActivated: root.act(modelData)
         }
-        Rectangle {
-            color: "#2e2230"; visible: Player.error.length > 0
-            Layout.fillWidth: true; implicitHeight: errorLabel.implicitHeight + 24
-            Label { id: errorLabel; anchors.fill: parent; anchors.margins: 12; text: Player.error; wrapMode: Text.Wrap; color: "#ffd3da" }
+    }
+    Shortcut { sequence: "F11"; context: Qt.ApplicationShortcut; enabled: root.shortcutsAllowed; onActivated: root.toggleFullscreen() }
+    Shortcut { sequence: "Esc"; context: Qt.ApplicationShortcut; enabled: root.shortcutsAllowed; onActivated: { if (root.visibility === Window.FullScreen) root.showNormal(); else hud.showControls() } }
+    Shortcut { sequence: "Media Play"; context: Qt.ApplicationShortcut; enabled: root.shortcutsAllowed; onActivated: Player.setPaused(false) }
+    Shortcut { sequence: "Media Pause"; context: Qt.ApplicationShortcut; enabled: root.shortcutsAllowed; onActivated: Player.setPaused(true) }
+    DropArea { anchors.fill: parent; onDropped: drop => { if (drop.hasUrls) { Player.openFiles(drop.urls, false); drop.accepted = true } } }
+    RowLayout {
+        anchors.fill: parent; anchors.margins: root.page === "player" ? 0 : 20; spacing: 24
+        Card {
+            id: navigation
+            property real navigationWidth: Preferences.expandedSidebar && root.width > 1000 ? 202 : 76
+            visible: root.page !== "player"
+            Layout.preferredWidth: navigationWidth; Layout.fillHeight: true
+            Behavior on navigationWidth { NumberAnimation { duration: Theme.motion; easing.type: Easing.OutCubic } }
+            ColumnLayout {
+                anchors.fill: parent; anchors.margins: 14; spacing: 12
+                RowLayout {
+                    Layout.fillWidth: true
+                    Rectangle { implicitWidth: 42; implicitHeight: 42; radius: 15; color: Theme.accent; Icon { name: "play"; tint: Theme.onAccent; anchors.centerIn: parent; width: 24; height: 24 } }
+                    Label { textFormat: Text.PlainText; visible: navigation.navigationWidth > 100; text: "JADZUMI"; font.bold: true; font.pixelSize: 16; font.letterSpacing: 1.3 }
+                }
+                Item { implicitHeight: 18 }
+                JButton { Layout.fillWidth: true; text: navigation.navigationWidth > 100 ? "Home" : ""; iconName: "home"; hint: "Home"; tone: root.page === "home" ? "primary" : "quiet"; onClicked: root.page = "home" }
+                JButton { Layout.fillWidth: true; text: navigation.navigationWidth > 100 ? "Queue" : ""; iconName: "queue"; hint: "Queue"; tone: root.page === "queue" ? "primary" : "quiet"; onClicked: root.page = "queue" }
+                JButton { Layout.fillWidth: true; text: navigation.navigationWidth > 100 ? "Open video" : ""; iconName: "open"; hint: "Open local videos"; tone: "quiet"; enabled: Player.ready; onClicked: root.chooseFiles(false) }
+                JButton { visible: Player.loaded; Layout.fillWidth: true; text: navigation.navigationWidth > 100 ? "Now playing" : ""; iconName: "screen"; hint: "Now playing"; tone: "quiet"; onClicked: root.page = "player" }
+                Item { Layout.fillHeight: true }
+                JButton { Layout.fillWidth: true; text: navigation.navigationWidth > 100 ? "Settings" : ""; iconName: "settings"; hint: "Settings"; tone: "quiet"; onClicked: root.openSettings() }
+                JButton { Layout.fillWidth: true; text: navigation.navigationWidth > 100 ? "Collapse" : ""; iconName: "menu"; hint: "Toggle sidebar"; tone: "quiet"; onClicked: Preferences.expandedSidebar = !Preferences.expandedSidebar }
+            }
         }
-        RowLayout {
-            Layout.fillWidth: true; Layout.fillHeight: true; spacing: 0
-            // Native HWNDs occupy their own stacking layer. No QML overlay is placed here in M0.
-            WindowContainer { Layout.fillWidth: true; Layout.fillHeight: true; window: VideoSurface }
-            Rectangle {
-                visible: root.diagnosticsVisible
-                Layout.preferredWidth: 300; Layout.fillHeight: true; color: "#192234"
-                ScrollView {
-                    anchors.fill: parent; anchors.margins: 12
-                    TextArea {
-                        readOnly: true; selectByMouse: true; wrapMode: TextEdit.WrapAnywhere
-                        text: "Observed libmpv properties\n\n" + JSON.stringify(Player.diagnostics, null, 2) +
-                              "\n\nMissing values are unavailable.\n\nOutput policy: SDR (BT.709). HDR output is not validated in M0.\n\nCPU/GPU utilization is not measured."
-                        font.pixelSize: 12; color: "#dce8fa"
-                        background: Rectangle { color: "transparent" }
+        Item {
+            Layout.fillWidth: true; Layout.fillHeight: true
+            ColumnLayout {
+                anchors.fill: parent; anchors.topMargin: 12; spacing: 16
+                visible: root.page !== "player"
+                Card {
+                    visible: Player.error.length > 0
+                    Layout.fillWidth: true; implicitHeight: errorMessage.implicitHeight + 24
+                    RowLayout { id: errorMessage; anchors.fill: parent; anchors.margins: 12; Label { textFormat: Text.PlainText; text: Player.error; wrapMode: Text.Wrap; color: Theme.danger; Layout.fillWidth: true } JButton { compact: true; tone: "quiet"; iconName: "close"; hint: "Dismiss error"; onClicked: Player.dismissError() } }
+                }
+                HomeView { visible: root.page === "home"; Layout.fillWidth: true; Layout.fillHeight: true; onOpenRequested: append => root.chooseFiles(append); onDetailsRequested: record => { details.record = record; details.open() } }
+                QueueView { visible: root.page === "queue"; Layout.fillWidth: true; Layout.fillHeight: true; onAddRequested: root.chooseFiles(true) }
+                Label { textFormat: Text.PlainText; visible: root.notice.length > 0; text: root.notice; color: Theme.accent; elide: Text.ElideRight; Layout.fillWidth: true }
+            }
+            Item {
+                anchors.fill: parent; visible: root.page === "player"
+                Rectangle { anchors.fill: parent; color: "black" }
+                WindowContainer { anchors.fill: parent; window: VideoSurface }
+                // A separate transparent native child window is required above mpv's HWND.
+                WindowContainer {
+                    anchors.fill: parent
+                    window: ApplicationWindow {
+                        id: videoOverlay
+                        color: "transparent"; flags: Qt.FramelessWindowHint
+                        font.family: Theme.fontFamily; font.pixelSize: 14 * Theme.scaleFactor
+                        palette.window: Theme.surface; palette.windowText: Theme.text; palette.text: Theme.text
+                        palette.button: Theme.raised; palette.buttonText: Theme.text; palette.base: Theme.surface
+                        palette.highlight: Theme.accent; palette.highlightedText: Theme.onAccent
+                        PlayerHud { id: hud; anchors.fill: parent; onBackRequested: root.showHome(); onFullscreenRequested: root.toggleFullscreen(); onOpenRequested: append => root.chooseFiles(append) }
                     }
                 }
             }
         }
-        ColumnLayout {
-            Layout.fillWidth: true; Layout.margins: 12; spacing: 5
-            Label {
-                text: Player.loaded ? Player.title : "Open a local video to begin · Original video timing · No interpolation"
-                elide: Text.ElideMiddle; Layout.fillWidth: true
-            }
-            Slider {
-                id: progress
-                property bool scrubbing: false
-                Layout.fillWidth: true; from: 0; to: Math.max(1, Player.duration)
-                enabled: Player.loaded && Player.duration > 0
-                Binding { target: progress; property: "value"; value: Player.position; when: !progress.scrubbing; restoreMode: Binding.RestoreNone }
-                onMoved: { if (!pressed && enabled) Player.seek(value) }
-                onPressedChanged: {
-                    if (pressed) scrubbing = true
-                    else if (scrubbing) { if (enabled) Player.seek(value); scrubbing = false }
-                }
-            }
-            RowLayout {
-                Layout.fillWidth: true
-                Button { text: Player.paused ? "Play" : "Pause"; enabled: Player.loaded; onClicked: Player.togglePause() }
-                Button { text: "Stop"; enabled: Player.loaded; onClicked: Player.stop() }
-                Button { text: "−10 s"; enabled: Player.loaded; onClicked: Player.seekRelative(-10) }
-                Button { text: "+10 s"; enabled: Player.loaded; onClicked: Player.seekRelative(10) }
-                Label { text: root.time(Player.position) + " / " + root.time(Player.duration); Layout.fillWidth: true }
-                Button { text: Player.muted ? "Unmute" : "Mute"; enabled: Player.ready; onClicked: Player.toggleMute() }
-                Slider { Layout.preferredWidth: 100; from: 0; to: 100; value: Player.volume; enabled: Player.ready; onMoved: Player.setVolume(value) }
-                Button { text: "Fullscreen"; onClicked: root.fullscreen() }
-            }
-            RowLayout {
-                Label { text: "Decoder:"; color: "#a5b5cd" }
-                ComboBox {
-                    model: ["Automatic D3D11VA + software fallback", "Software (recovery)"]
-                    enabled: Player.ready
-                    onActivated: Player.setHardwareDecoding(currentIndex === 0)
-                }
-                Label { text: Player.diagnostics["hwdec-current"] || "Not reported"; color: "#a5b5cd"; Layout.fillWidth: true }
-            }
-        }
     }
+    SettingsPanel { id: homeSettings }
+    FileDetails { id: details; onPlayRequested: (path, fromBeginning) => Player.openPath(path, fromBeginning) }
 }

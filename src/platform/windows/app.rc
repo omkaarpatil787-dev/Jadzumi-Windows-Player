@@ -1,7 +1,8 @@
 #include <windows.h>
+1 ICON "jadzumi.ico"
 1 VERSIONINFO
-FILEVERSION 0,1,0,0
-PRODUCTVERSION 0,1,0,0
+FILEVERSION 0,3,0,0
+PRODUCTVERSION 0,3,0,0
 FILEFLAGSMASK 0x3fL
 FILEFLAGS VS_FF_PRERELEASE
 FILEOS VOS_NT_WINDOWS32
@@ -12,12 +13,12 @@ BEGIN
   BLOCK "040904b0"
   BEGIN
    VALUE "CompanyName", "Jadzumi\0"
-   VALUE "FileDescription", "Jadzumi Player Windows — M0\0"
-   VALUE "FileVersion", "0.1.0\0"
+   VALUE "FileDescription", "Jadzumi Player Windows — M2\0"
+   VALUE "FileVersion", "0.3.0\0"
    VALUE "InternalName", "jadzumi\0"
    VALUE "OriginalFilename", "jadzumi.exe\0"
    VALUE "ProductName", "Jadzumi Player Windows\0"
-   VALUE "ProductVersion", "0.1.0-m0\0"
+   VALUE "ProductVersion", "0.3.0-m2\0"
   END
  END
  BLOCK "VarFileInfo"
