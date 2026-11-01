@@ -111,24 +111,28 @@ ApplicationWindow {
                 Label { textFormat: Text.PlainText; visible: root.notice.length > 0; text: root.notice; color: Theme.accent; elide: Text.ElideRight; Layout.fillWidth: true }
             }
             Item {
+                id: playerStage
                 anchors.fill: parent; visible: root.page === "player"
                 Rectangle { anchors.fill: parent; color: "black" }
                 WindowContainer { anchors.fill: parent; window: VideoSurface }
-                // A separate transparent native child window is required above mpv's HWND.
-                WindowContainer {
-                    anchors.fill: parent
-                    visible: !root.diagnosticHideOverlay
-                    window: ApplicationWindow {
+                // An owned translucent tool window composes above the native video HWND.
+                // Child-window alpha can reveal the Qt parent instead of sibling video on Windows.
+                ApplicationWindow {
                         id: videoOverlay
                         objectName: "nativePlaybackHud"
                         background: null
-                        color: "transparent"; flags: Qt.FramelessWindowHint
+                        color: "transparent"; flags: Qt.Tool | Qt.FramelessWindowHint | Qt.NoDropShadowWindowHint
+                        transientParent: root
+                        visible: root.page === "player" && root.visible && root.visibility !== Window.Minimized && !root.diagnosticHideOverlay
+                        width: playerStage.width; height: playerStage.height
+                        property point screenOrigin: { root.x; root.y; root.width; root.height; root.screen; return playerStage.mapToGlobal(0, 0) }
+                        x: screenOrigin.x; y: screenOrigin.y
+                        onClosing: close => { close.accepted = false; root.close() }
                         font.family: Theme.fontFamily; font.pixelSize: 14 * Theme.scaleFactor
                         palette.window: "transparent"; palette.windowText: Theme.text; palette.text: Theme.text
                         palette.button: Theme.raised; palette.buttonText: Theme.text; palette.base: Theme.surface
                         palette.highlight: Theme.accent; palette.highlightedText: Theme.accentInk
                         PlayerHud { id: hud; anchors.fill: parent; onBackRequested: root.showHome(); onFullscreenRequested: root.toggleFullscreen(); onOpenRequested: append => root.chooseFiles(append) }
-                    }
                 }
             }
         }
